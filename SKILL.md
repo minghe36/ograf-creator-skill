@@ -1,6 +1,6 @@
 ---
 name: ograf-creator
-description: Create, validate, package, and optionally upload OGRAF HTML animation components for ograf.app. Use when a user asks to create an OGRAF component, animation, template, or .ograf package.
+description: Create, validate, package, authenticate, and upload OGRAF HTML animation components for ograf.app. Use when a user asks to create an OGRAF component, animation, template, or .ograf package, or to log in to ograf.app for CLI uploads.
 ---
 
 # OGRAF Creator
@@ -14,6 +14,8 @@ Before the first authenticated upload, run:
 ```bash
 python3 scripts/ograf_auth.py login
 ```
+
+When the user directly asks to log in, run this command immediately.
 
 The command opens the HaoAI OAuth page, completes Authorization Code + PKCE through a loopback callback, fetches `user_key`, and stores it in the user's local config directory with owner-only permissions. Future uploads reuse that local key and must not ask the user to log in again unless the key is missing or rejected by the API.
 
