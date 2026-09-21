@@ -7,6 +7,18 @@ description: Create, validate, package, and optionally upload OGRAF HTML animati
 
 Create a self-contained OGRAF HTML animation package that can be previewed locally and uploaded to ograf.app.
 
+## Login command
+
+Before the first authenticated upload, run:
+
+```bash
+python3 scripts/ograf_auth.py login
+```
+
+The command opens the HaoAI OAuth page, completes Authorization Code + PKCE through a loopback callback, fetches `user_key`, and stores it in the user's local config directory with owner-only permissions. Future uploads reuse that local key and must not ask the user to log in again unless the key is missing or rejected by the API.
+
+Use `python3 scripts/ograf_auth.py status` to inspect login state without printing the key. Use `python3 scripts/ograf_auth.py logout` only when the user asks to sign out.
+
 ## Required component information
 
 Before creating files, ensure the user has explicitly provided all four fields below:
@@ -42,7 +54,7 @@ Implement the component according to the user's visual and motion requirements. 
 
 ## Uploading to ograf.app
 
-When the user asks to upload or publish, read [references/ograf-app-upload.md](references/ograf-app-upload.md). Uploading changes external state and requires a valid signed-in ograf.app session; do not claim success without checking the API response.
+When the user asks to upload or publish, read [references/ograf-app-upload.md](references/ograf-app-upload.md). Uploading changes external state; do not claim success without checking the API response.
 
 ## Completion checks
 
@@ -52,4 +64,3 @@ Before delivery, verify that:
 - `index.html` exists at the package root.
 - Both orientation values are JSON booleans, not strings or numbers.
 - The archive contains no unsafe paths and does not exceed the upload size limit.
-
