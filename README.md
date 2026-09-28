@@ -14,7 +14,7 @@
 - 初始化项目、校验目录或压缩包、打包为 `.ograf`。
 - 要求本地 AI 在上传、发布前完成技术和内容审核，未通过则停止。
 
-**当前仓库提供创作、预览、校验和打包脚本，以及发布审核指引。登录、上传和社区发布仍需要运行环境提供对应工具；本仓库目前没有登录或上传 CLI。** 安装 Skill 不等于已登录 ograf.app，也不等于已发布作品。
+**当前仓库提供创作、预览、校验、打包和 HaoAI 登录脚本，以及上传 API 与发布审核指引。上传需要 AI 使用受支持的 HTTP 工具，社区发布还需对应的发布能力；仓库目前没有独立上传/发布 CLI。** 安装 Skill 不等于已登录 ograf.app，也不等于已发布作品。
 
 ## 1. 安装 Skill
 
@@ -58,7 +58,7 @@ $skill-installer 安装 https://github.com/minghe36/ograf-creator-skill
 创建后打开本地预览，先不上传。
 ```
 
-AI 应创建独立组件目录，运行校验并启动预览。你可以补充参考图、颜色、时长和支持方向。只支持横屏时请明确说明，不要把未验证的竖屏能力标为支持。
+创建前，AI 会确认组件标题、描述、是否支持横屏和竖屏。已在对话中提供的信息无需重复确认，缺失项会一起询问。随后创建独立组件目录，运行校验并启动预览。你可以补充参考图、颜色、时长和支持方向。只支持横屏时请明确说明，不要把未验证的竖屏能力标为支持。
 
 模板默认是字幕条，用于展示完整的参数与生命周期；创建标题动画时，AI 应按你的要求修改模板，而不是直接把默认字幕条当作完成品。
 
@@ -217,11 +217,32 @@ AI 必须先读取 [发布审核规则](references/publishing-review.md)，在�
 
 只有完整 PASS 才允许上传或发布。检查未完成、失败或存在疑问时，不得先上传草稿绕过要求。源码、资源、参数或发布文案发生变化后，重新检查受影响项目，最终发送的包要与检查报告一致。
 
+### 登录 ograf.app
+
+在 Skill 目录运行：
+
+```bash
+python3 scripts/ograf_auth.py login
+python3 scripts/ograf_auth.py status
+```
+
+`login` 打开 HaoAI OAuth 页面，通过本机 `127.0.0.1:18765` 回调完成登录，并将 user_key 保存到本地用户配置目录；macOS/Linux 默认是 `~/.config/ograf/credentials.json`，Windows 默认是 `%APPDATA%/ograf/credentials.json`。后续上传复用本地凭据。不要复制、打印或提交该密钥。
+
+`status` 显示本地保存的账号，不会打印密钥；它不是一次服务端有效性检查。凭据缺失或上传返回 401 时重新登录。若回调端口被占用，先解决端口占用再重试。
+
+只在需要退出时运行：
+
+```bash
+python3 scripts/ograf_auth.py logout
+```
+
+该命令删除本地凭据。上传请求和认证方式详见 [ograf.app 上传 API](references/ograf-app-upload.md)。
+
 **登录与发布的工具边界：**
 
-- 此仓库目前没有 `ograf_auth.py`、上传或发布脚本，不能直接执行 README 中不存在的命令。
+- 此仓库提供 `ograf_auth.py`，但没有独立上传或发布脚本；AI 根据上传 API 指引使用受支持的 HTTP 工具。
 - 安装 Skill 或登录 Codex/WorkBuddy，不代表已经登录 ograf.app。
-- 若运行环境提供受支持的登录/上传工具，AI 应按该工具的流程登录并确认账号，再执行已授权的发布。
+- AI 先运行登录脚本并检查本地账号，完成全部审核后通过上传 API 发送已授权的文件包；公开发布仍需对应工具或接口。
 - 缺少工具或凭据时，AI 应保留本地包，明确说明缺少哪项能力，不能虚构登录成功或发布链接。
 - 上传到工作区形成草稿，与公开社区发布是两个状态。完成后检查真实返回结果和公开页面。
 
@@ -237,7 +258,7 @@ AI 必须先读取 [发布审核规则](references/publishing-review.md)，在�
 | 重播跳帧或停止后仍有动画 | 清理上一轮的 requestAnimationFrame、计时器和动画任务 |
 | 打包通过但上传被拒绝 | 检查服务端拒绝原因，补查单文件大小、资源类型、脚本策略和实际解压内容 |
 | 没有浏览器工具 | 可手动预览，但应说明 AI 的实际浏览器检查未完成；发布检查不能直接标 PASS |
-| 无法登录或发布 | 确认运行环境是否提供对应工具；本仓库当前仅提供本地创作工具和发布检查指引 |
+| 无法登录或发布 | 登录使用 ograf_auth.py；上传按 API 指引执行，公开发布需对应工具 |
 
 ## 目录与参考文档
 
@@ -250,6 +271,8 @@ AI 必须先读取 [发布审核规则](references/publishing-review.md)，在�
 - `assets/starter/`：完整双入口模板。
 - `scripts/ograf_tool.py`：init / validate / pack。
 - `scripts/ograf_dev_server.mjs`：本地预览服务。
+- `scripts/ograf_auth.py`：HaoAI OAuth 登录、本地状态和退出。
+- [上传 API](references/ograf-app-upload.md)：文件包、元信息和 X-User-Key 认证。
 
 ## 许可
 

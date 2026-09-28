@@ -16,6 +16,12 @@ Build an OGraf as a portable folder whose root contains `project.json` and `inde
 - For visual or form debugging, read [references/browser-debugging.md](references/browser-debugging.md).
 - Before any upload or publication, always read and apply [references/publishing-review.md](references/publishing-review.md).
 
+## Login and component information
+
+When the user asks to log in, run `python3 <skill-dir>/scripts/ograf_auth.py login`. Before the first authenticated upload, use the same command if credentials are missing. It opens HaoAI OAuth, verifies the PKCE/state callback and stores user_key locally with owner-only permissions. Reuse credentials for later uploads; sign in again only when missing or rejected. Never print the key. Use `status` to inspect local credentials and `logout` only at the user's request. A local credential file does not prove the server currently accepts it.
+
+Before creating files, ensure the user has provided the title, description, supportsLandscape and supportsPortrait. Reuse values already given in the conversation; ask for missing fields together. Do not silently invent or overwrite these four values. Store name/description and boolean orientation flags in project.json and preserve them in upload metadata.
+
 ## Create or edit
 
 1. Inspect the target directory before writing. Preserve user assets and existing behavior unless asked to replace them.
@@ -71,6 +77,6 @@ Review component names and descriptions in project.json, every .ograf.json and t
 
 Record PASS / FAIL / NEEDS_REVIEW, evidence, blockers, final metadata and the final archive SHA-256 in a local publication review report. FAIL, NEEDS_REVIEW or any untested required check means stop before upload/publish. Fix and recheck; do not upload a draft as a workaround. Any code, asset, parameter or metadata change invalidates the affected review; rebuild and check the final artifact before sending it.
 
-After PASS, complete only the user's authorized upload/publication using available supported tools. Confirm the server response and public page; a draft is not a published component. If tools or credentials are unavailable, retain the package and report the missing capability instead of inventing commands or results.
+After PASS, read [references/ograf-app-upload.md](references/ograf-app-upload.md) and complete only the user's authorized upload/publication using supported tools and the saved CLI credentials. Confirm the server response and public page; a draft is not a published component. If tools or credentials are unavailable, retain the package and report the missing capability instead of inventing commands or results.
 
 Do not upload, publish, or overwrite an unrelated package unless the user explicitly asks.
