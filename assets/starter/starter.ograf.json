@@ -1,0 +1,98 @@
+{
+  "$schema": "https://ograf.ebu.io/v1/specification/json-schemas/graphics/schema.json",
+  "id": "ograf-lower-third-starter",
+  "version": "1.0.0",
+  "name": "OGraf lower third starter",
+  "description": "A portable schema-driven lower third animation",
+  "main": "main.js",
+  "supportsRealTime": true,
+  "supportsNonRealTime": true,
+  "stepCount": 1,
+  "schema": {
+    "type": "object",
+    "properties": {
+      "title": {
+        "type": "string",
+        "title": "Title",
+        "default": "Hello OGraf"
+      },
+      "subtitle": {
+        "type": "string",
+        "title": "Subtitle",
+        "gddType": "multi-line",
+        "default": "Schema-driven HTML animation"
+      },
+      "accentColor": {
+        "type": "string",
+        "title": "Accent color",
+        "gddType": "color-rrggbb",
+        "pattern": "^#[0-9a-fA-F]{6}$",
+        "default": "#8b5cf6"
+      },
+      "panelColor": {
+        "type": "string",
+        "title": "Panel color",
+        "gddType": "color-rrggbbaa",
+        "pattern": "^#[0-9a-fA-F]{8}$",
+        "default": "#111827e8"
+      },
+      "position": {
+        "type": "string",
+        "title": "Position",
+        "gddType": "select",
+        "enum": [
+          "left",
+          "center",
+          "right"
+        ],
+        "enumTitles": {
+          "left": "Left",
+          "center": "Center",
+          "right": "Right"
+        },
+        "default": "left"
+      },
+      "fontSize": {
+        "type": "integer",
+        "title": "Title size",
+        "minimum": 36,
+        "maximum": 120,
+        "default": 72
+      },
+      "holdSeconds": {
+        "type": "number",
+        "title": "Hold duration",
+        "minimum": 0.5,
+        "maximum": 10,
+        "default": 3
+      }
+    },
+    "default": {
+      "title": "Hello OGraf",
+      "subtitle": "Schema-driven HTML animation",
+      "accentColor": "#8b5cf6",
+      "panelColor": "#111827e8",
+      "position": "left",
+      "fontSize": 72,
+      "holdSeconds": 3
+    }
+  },
+  "renderRequirements": [
+    {
+      "resolution": {
+        "width": {
+          "ideal": 1920
+        },
+        "height": {
+          "ideal": 1080
+        }
+      },
+      "frameRate": {
+        "ideal": 30
+      }
+    }
+  ],
+  "v_bmd": {
+    "duration": 4.1
+  }
+}

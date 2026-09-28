@@ -1,0 +1,4 @@
+interface:
+  display_name: "OGraf Creator"
+  short_description: "Create and browser-debug OGraf animation packages"
+  default_prompt: "Use $ograf-creator-skill to create and debug a portable OGraf animation with a schema-driven form."
