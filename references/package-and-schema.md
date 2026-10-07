@@ -14,6 +14,14 @@ starter.ograf.json
 
 The native `.ograf.json` uses `main: "main.js"` and exports the Web Component. Its schema/defaults must agree with project.json; see [davinci-runtime.md](davinci-runtime.md).
 
+## Publication language configurations
+
+Keep the base `<name>.ograf.json`. Before each upload/publication, the AI regenerates `<name>.zh.ograf.json` and `<name>.en.ograf.json` from the final base manifest, in the same directory and archive. For example: `title.ograf.json`, `title.zh.ograf.json`, `title.en.ograf.json`. Each is a complete usable configuration, not a translation patch, and references the same main.js/runtime/assets.
+
+Translate `name`, `description`, schema titles/descriptions and user-visible default text (including nested text) for each language. Preserve property keys, required keys, enum values used by code, IDs, paths, version, capabilities, resolution, ranges, colors, numeric values and timing. Localized schema.default and property defaults must agree with each other; the base schema.default still matches project.json.data. Do not translate identifiers or user-provided proper names arbitrarily. Check that both languages fit the actual rendered layout and editable controls.
+
+Use `validate ... --for-publication` and `pack ... --for-publication` before upload. These checks require the complete three-file set and matching runtime/schema structure; language quality and localized default correctness remain part of the AI review. Ordinary draft validation/packing still accepts a base manifest alone.
+
 Local scripts, fonts, images, and other assets may be stored in subdirectories and referenced with relative URLs. Never place the two required entries inside a wrapper directory.
 
 The HaoOG upload path currently enforces these safety limits:

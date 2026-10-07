@@ -6,7 +6,7 @@ The AI Agent running on the user's computer is responsible for this review. Read
 
 Read package-and-schema.md, protocol.md and davinci-runtime.md. Check:
 
-- Root project.json and index.html exist. Native .ograf.json is valid JSON, main resolves to the local exported HTMLElement subclass, and parameters/types/defaults agree between native manifest and project data/schema.
+- Root project.json and index.html exist. The base native .ograf.json plus freshly AI-generated .zh.ograf.json and .en.ograf.json are valid complete configurations. All share the same local runtime and parameter structure; base defaults match project data, while localized text/defaults match their respective languages. Check translated names, descriptions and parameter labels, and preview both language defaults for clipping and correctness.
 - Native visible animation stage is mounted under document.body. Supplied renderCharacteristics.resolution overrides stale host size. Portrait is not squeezed into a stale landscape wrapper; aspect-matched previews fit uniformly. Cleanup removes portals, listeners and animation work.
 - load, updateAction, playAction, stopAction and dispose work. If supportsNonRealTime is true, goToTime and setActionsSchedule work at repeated/backward timestamps. Advertised capabilities are implemented.
 - The HTML adapter uses the same animation and implements all six postMessage lifecycle messages. Updates do not reload or implicitly replay. Playback, stop, replay, ready/end/error behave correctly.
@@ -16,9 +16,9 @@ Read package-and-schema.md, protocol.md and davinci-runtime.md. Check:
 Run local validation, pack, then validate the final archive:
 
 ```bash
-python3 <skill-dir>/scripts/ograf_tool.py validate <target>
-python3 <skill-dir>/scripts/ograf_tool.py pack <target> --output <name>.ograf
-python3 <skill-dir>/scripts/ograf_tool.py validate <name>.ograf
+python3 <skill-dir>/scripts/ograf_tool.py validate <target> --for-publication
+python3 <skill-dir>/scripts/ograf_tool.py pack <target> --output <name>.ograf --for-publication
+python3 <skill-dir>/scripts/ograf_tool.py validate <name>.ograf --for-publication
 ```
 
 ## 2. Inspect safety limits and resources
@@ -35,7 +35,7 @@ The Python validator is a structural check, not a full malicious-code detector o
 
 ## 3. Review component name and description
 
-Inspect the exact final values in project.json.name/description, native .ograf.json.name/description and the upload/publication request's title/name/description. Require meaningful, non-empty name and description. Metadata must describe the actual component and agree across entry paths; no unresolved placeholders or misleading claims.
+Inspect the exact final values in project.json.name/description, every native .ograf.json.name/description (including both languages) and the upload/publication request's title/name/description. Require meaningful, non-empty name and description. Localized wording may differ but must describe the same component accurately; no unresolved placeholders or misleading claims.
 
 Do not publish names/descriptions containing prohibited wording or promoting unlawful activity, sexual exploitation, hateful targeting, threats or abusive harassment, scams, or illegal transactions. Apply the website's or user's supplied prohibited-word list when available. Do not invent a supposedly complete statutory blacklist, label ordinary animation terminology illegal, or blindly reject educational/neutral discussion based on a keyword alone.
 

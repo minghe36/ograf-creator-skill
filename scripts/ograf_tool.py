@@ -136,24 +136,68 @@ def validate_native_manifest(names: set[str], read_text, result: ValidationResul
     if not manifests:
         result.warnings.append("no native .ograf.json manifest; DaVinci component compatibility is unverified")
         return
-    if len(manifests) != 1:
-        result.errors.append("provide exactly one native .ograf.json manifest")
+    base = [name for name in manifests if not name.endswith((".zh.ograf.json", ".en.ograf.json"))]
+    if len(base) != 1:
+        result.errors.append("provide exactly one base native .ograf.json manifest")
         return
+    stem = base[0][:-len(".ograf.json")]
+    localized = {f"{stem}.{locale}.ograf.json" for locale in ("zh", "en")}
+    if set(manifests) - {base[0]} - localized:
+        result.errors.append("localized manifests must share the base filename and use .zh.ograf.json or .en.ograf.json")
+    if set(manifests) & localized and not localized <= set(manifests):
+        result.errors.append("provide both Chinese and English localized manifests")
     try:
-        manifest = json.loads(read_text(manifests[0]))
         project = json.loads(read_text("project.json"))
-        main = manifest.get("main")
-        if not isinstance(main, str) or unsafe_name(main) or main not in names:
-            result.errors.append("native manifest main must reference a local package entry")
-        native_properties = manifest.get("schema", {}).get("properties", {})
-        project_properties = project.get("schema", {}).get("properties", {})
-        without_defaults = lambda props: {key: {k: v for k, v in field.items() if k != "default"} for key, field in props.items()}
-        if without_defaults(native_properties) != without_defaults(project_properties):
-            result.errors.append("native manifest schema.properties must match project.json")
-        if manifest.get("schema", {}).get("default") != project.get("data"):
-            result.errors.append("native manifest schema.default must match project.json.data")
-    except (ValueError, OSError, KeyError, AttributeError) as exc:
+        base_manifest = json.loads(read_text(base[0]))
+        def structural(value):
+            if isinstance(value, dict):
+                return {key: ({field: structural(spec) for field, spec in item.items()} if key in {"properties", "$defs", "definitions"} and isinstance(item, dict) else structural(item)) for key, item in value.items() if key not in {"title", "description", "default"}}
+            if isinstance(value, list):
+                return [structural(item) for item in value]
+            return value
+        for name in sorted(manifests):
+            manifest = json.loads(read_text(name))
+            main = manifest.get("main")
+            if not isinstance(main, str) or unsafe_name(main) or main not in names:
+                result.errors.append(f"{name}: main must reference a local package entry")
+            native_properties = manifest.get("schema", {}).get("properties", {})
+            project_properties = project.get("schema", {}).get("properties", {})
+            if name == base[0]:
+                without_defaults = lambda props: {key: {k: v for k, v in field.items() if k != "default"} for key, field in props.items()}
+                if without_defaults(native_properties) != without_defaults(project_properties):
+                    result.errors.append(f"{name}: schema.properties must match project.json")
+                if manifest.get("schema", {}).get("default") != project.get("data"):
+                    result.errors.append(f"{name}: schema.default must match project.json.data")
+            else:
+                if structural(manifest.get("schema")) != structural(base_manifest.get("schema")):
+                    result.errors.append(f"{name}: schema structure must match the base manifest")
+                for key in set(manifest) | set(base_manifest):
+                    if key not in {"name", "description", "schema"} and manifest.get(key) != base_manifest.get(key):
+                        result.errors.append(f"{name}: {key} must match the base manifest")
+                for key in ("name", "description"):
+                    if not isinstance(manifest.get(key), str) or not manifest[key].strip():
+                        result.errors.append(f"{name}: {key} must be non-empty localized text")
+    except (ValueError, OSError, KeyError, AttributeError, TypeError) as exc:
         result.errors.append(f"invalid native manifest: {exc}")
+
+
+def require_publication_locales(path: Path, result: ValidationResult) -> None:
+    if not result.ok:
+        return
+    if path.is_dir():
+        names = {item.relative_to(path).as_posix() for item in path.rglob("*") if item.is_file()}
+    else:
+        with zipfile.ZipFile(path) as archive:
+            names = set(archive.namelist())
+    bases = [name for name in names if name.endswith(".ograf.json") and not name.endswith((".zh.ograf.json", ".en.ograf.json"))]
+    if len(bases) != 1:
+        result.errors.append("publication requires one base native manifest")
+        return
+    stem = bases[0][:-len(".ograf.json")]
+    for locale in ("zh", "en"):
+        filename = f"{stem}.{locale}.ograf.json"
+        if filename not in names:
+            result.errors.append(f"publication requires AI-generated {filename}")
 
 
 def validate_protocol(index_html: str, result: ValidationResult) -> None:
@@ -297,6 +341,8 @@ def command_init(args: argparse.Namespace) -> int:
 def command_validate(args: argparse.Namespace) -> int:
     path = Path(args.path).expanduser().resolve()
     result = validate(path)
+    if args.for_publication:
+        require_publication_locales(path, result)
     report(path, result)
     return 0 if result.ok else 1
 
@@ -304,6 +350,8 @@ def command_validate(args: argparse.Namespace) -> int:
 def command_pack(args: argparse.Namespace) -> int:
     root = Path(args.path).expanduser().resolve()
     initial = validate_directory(root)
+    if args.for_publication:
+        require_publication_locales(root, initial)
     report(root, initial)
     if not initial.ok:
         return 1
@@ -320,6 +368,8 @@ def command_pack(args: argparse.Namespace) -> int:
             zipped.write(path, name)
 
     packed = validate_archive(output)
+    if args.for_publication:
+        require_publication_locales(output, packed)
     report(output, packed)
     if packed.ok:
         print(f"created: {output}")
@@ -337,11 +387,13 @@ def build_parser() -> argparse.ArgumentParser:
 
     validate_parser = sub.add_parser("validate", help="validate an OGraf directory or archive")
     validate_parser.add_argument("path")
+    validate_parser.add_argument("--for-publication", action="store_true", help="require Chinese and English manifests before publication")
     validate_parser.set_defaults(handler=command_validate)
 
     pack_parser = sub.add_parser("pack", help="validate and create a .ograf ZIP archive")
     pack_parser.add_argument("path")
     pack_parser.add_argument("--output", "-o")
+    pack_parser.add_argument("--for-publication", action="store_true", help="require Chinese and English manifests before publication")
     pack_parser.set_defaults(handler=command_pack)
     return parser
 

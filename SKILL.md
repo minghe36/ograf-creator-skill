@@ -14,11 +14,12 @@ Build an OGraf as a portable folder whose root contains `project.json` and `inde
 - For package layout, manifest fields, or schema controls, read [references/package-and-schema.md](references/package-and-schema.md).
 - For runtime behavior or lifecycle bugs, read [references/protocol.md](references/protocol.md).
 - For visual or form debugging, read [references/browser-debugging.md](references/browser-debugging.md).
+- When editing an existing private draft and synchronizing its code, read [references/ograf-app-upload.md](references/ograf-app-upload.md#sync-code-to-an-existing-draft). Use the existing animation ID rather than creating another workspace item.
 - Before any upload or publication, always read and apply [references/publishing-review.md](references/publishing-review.md).
 
-## Login and component information
+## Component information
 
-When the user asks to log in, run `python3 <skill-dir>/scripts/ograf_auth.py login`. Before the first authenticated upload, use the same command if credentials are missing. It opens HaoAI OAuth, verifies the PKCE/state callback and stores user_key locally with owner-only permissions. Reuse credentials for later uploads; sign in again only when missing or rejected. Never print the key. Use `status` to inspect local credentials and `logout` only at the user's request. A local credential file does not prove the server currently accepts it.
+Creating, previewing, validating and packaging are local work: do not ask the user to sign in to ograf.app for them. An ograf.app account is only needed to upload or publish; the login step is in [Login: only for upload or publication](#login-only-for-upload-or-publication).
 
 Before creating files, ensure the user has provided the title, description, supportsLandscape and supportsPortrait. Reuse values already given in the conversation; ask for missing fields together. Do not silently invent or overwrite these four values. Store name/description and boolean orientation flags in project.json and preserve them in upload metadata.
 
@@ -67,7 +68,13 @@ python3 <skill-dir>/scripts/ograf_tool.py pack <target> --output <name>.ograf
 
 The packer excludes common editor and OS junk, places required entries at the archive root, and re-validates the result. Report the output path, archive size, validation result, and what was actually exercised in the browser.
 
+## Login: only for upload or publication
+
+Run `python3 <skill-dir>/scripts/ograf_auth.py login` when the user asks to log in, or before the first authenticated upload if credentials are missing. It opens HaoAI OAuth, verifies the PKCE/state callback and stores user_key locally with owner-only permissions. Reuse the credentials for later uploads and code syncs; sign in again only when they are missing or rejected, for example when an upload returns `401`. Never print the key. Use `status` to inspect the saved account and `logout` only at the user's request. A local credential file does not prove the server currently accepts it.
+
 ## Upload and publish: mandatory local AI review
+
+Before packaging for upload/publication, regenerate two additional complete native configurations from the final component: `<name>.zh.ograf.json` and `<name>.en.ograf.json`, beside the existing `<name>.ograf.json`. The AI must translate component name/description, parameter titles/descriptions and visible default text into Chinese and English; copying the same untranslated file twice is insufficient. Preserve parameter keys, enum values, runtime entry, capabilities and numeric/color/timing values. Read the localization rules in [references/package-and-schema.md](references/package-and-schema.md). Validate and pack with `--for-publication`; missing or outdated language files block publication.
 
 When the user asks to upload or publish, the AI Agent on the user's computer must review the actual final component and archive against [references/publishing-review.md](references/publishing-review.md). Only a complete PASS permits upload or publication. A successful pack command alone is not a publication approval.
 
@@ -80,3 +87,9 @@ Record PASS / FAIL / NEEDS_REVIEW, evidence, blockers, final metadata and the fi
 After PASS, read [references/ograf-app-upload.md](references/ograf-app-upload.md) and complete only the user's authorized upload/publication using supported tools and the saved CLI credentials. Always send the intended animation `status` explicitly: use `draft` when the user requests a private draft and `published` only when public publication is authorized. Follow the two-step upload/status procedure in that reference. Verify the returned `data.status`; for drafts confirm the workspace link and exclusion from the public catalogue, while public publication requires checking the public page. A draft is not a publicly published component. If tools or credentials are unavailable, retain the package and report the missing capability instead of inventing commands or results.
 
 Do not upload, publish, or overwrite an unrelated package unless the user explicitly asks.
+
+## 修改已有草稿后同步代码
+
+用户要求修改并同步已有草稿，或要求继续修改本次会话中已授权保存的草稿时，完成修改、验证和最终包审查后，调用 `POST /api/ograf/created/sync/v1?animationId=<原草稿动画 ID>` 同步最新 `.ograf` 包。执行细节见 [同步已有草稿代码](references/ograf-app-upload.md#sync-code-to-an-existing-draft)。只修改本地文件不代表已同步完成。
+
+复用会话中已确认的动画 ID；缺少 ID 时查询本人创建列表并确认目标，不能仅凭名称覆盖作品。保留同一动画 ID 和 `draft` 状态，不调用新建上传流程、不创建重复作品，也不调用公开发布接口。同步成功后核对返回 ID、草稿状态及包 SHA-256，必要时通过本人私有下载接口验证服务器上的包。返回源目录、包路径、草稿 ID 和实际同步结果；接口未部署、鉴权失败或同步失败时保留本地成果并说明原因，不能报告已同步。
