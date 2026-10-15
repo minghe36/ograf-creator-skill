@@ -2,6 +2,22 @@
 
 Use this reference when the user asks to upload, publish, or synchronize changes to an existing draft. First complete [publishing-review.md](publishing-review.md); only a complete PASS for the final package and metadata permits sending the request. Uploading a draft is not an exemption from review.
 
+## Qiniu storage target and verification
+
+Upload and synchronize through the authenticated website APIs below. The server writes the original ZIP and extracted resources to the Qiniu **`haoog`** animation bucket, under `ograf/uploads/<workspace-or-replacement-UUID>/`, and exposes them through **`https://og.haoai.pro`**. Keep API requests on `https://ograf.app`; the CDN domain serves resources. Qiniu access/secret keys stay on the server; the Skill uses the existing account credentials.
+
+Before sending the animation status request after a new upload:
+
+1. Require HTTP 2xx, `ok: true`, a non-empty workspace `data.id`, and `data.packageUrl`. Parse the URL; require HTTPS, the exact host `og.haoai.pro`, no embedded username/password or custom port, and the path `/ograf/uploads/<returned workspace ID>/package.zip`. A substring host check is insufficient.
+2. Download that returned original ZIP and compare its SHA-256 with the exact reviewed archive sent. Fetch a known extracted entry such as `project.json` from the same CDN directory and compare its bytes with that entry in the archive. This verifies delivery of both the original package and an extracted resource. Report access or checksum failures and stop before the status request.
+3. After the status request succeeds, query the authenticated creator list (`POST /api/ograf/created/v1`, Bearer authentication, paginated `{ "page": 1, "page_size": 100 }`) and find the returned animation ID. Verify its `packagePath` matches the uploaded Qiniu URL and its `status` matches the requested state. The publication response itself returns ID/status, not storage details.
+
+For an existing draft sync, apply the same exact CDN origin and original-ZIP/extracted-entry checks to `data.packageUrl`, but expect a new replacement UUID independent of the animation ID. Verify the returned checksum and the creator record as described in the sync section. Synchronization has already changed the draft; a failed post-sync check must be reported as unverified rather than triggering another upload automatically.
+
+A response URL verifies the expected delivery domain, not the cloud account/bucket by itself. When server configuration is available as part of the task, verify `OGRAF_STORAGE_PROVIDER=qiniu`, `QINIU_OGRAF_BUCKET=haoog` and `QINIU_OGRAF_DOMAIN=https://og.haoai.pro` without exposing secrets. Otherwise report the API/CDN evidence actually checked. If an upload/sync returns `assets.ograf.app` or another unexpected origin, retain its returned ID, preserve the local archive, stop further publication and report a storage target mismatch. Do not rewrite the response URL to make the check pass, upload directly to an old bucket, or create a duplicate workspace as a workaround.
+
+Published desktop downloads may return a website compatibility endpoint that rebuilds a ZIP from extracted CDN files. Its checksum can differ from the original ZIP; validate it against that endpoint's trusted checksum, while using the original `data.packageUrl` for the upload-byte comparison above.
+
 ## Endpoint
 
 `POST https://ograf.app/api/ograf/upload`
@@ -40,7 +56,7 @@ An upload response creates a workspace draft. It does not prove public publicati
 
 Uploading a package creates an `og_workspace_items` workspace draft. The separate animation endpoint creates or updates `og_animations`; these are distinct records.
 
-After upload succeeds, send `POST https://ograf.app/api/ograf/animation` with JSON, the same `X-User-Key` authentication, the returned workspace item ID and the reviewed component metadata:
+After upload and the Qiniu verification above succeed, send `POST https://ograf.app/api/ograf/animation` with JSON, the same `X-User-Key` authentication, the returned workspace item ID and the reviewed component metadata:
 
 ```json
 {
@@ -79,7 +95,7 @@ For authorized edits to an existing draft, send the final reviewed archive to:
 - The server validates ownership, `draft` status and package safety. It uploads into a new storage directory and conditionally replaces the same animation's package URL, checksum and size; it does not create an animation or publish it. A concurrent state/package change returns 409.
 - This endpoint updates the animation package, not its title, description, category, other metadata or the original workspace archive. Do not replay the old workspace-to-animation flow after synchronization: it could restore the old archive. Report separately if the user's task also requires metadata changes.
 
-Success requires HTTP 2xx **and** `success: true` (not `ok: true`). Require `data.id` to match the original animation ID, `data.status` to equal `draft`, and `data.sha256` to match the SHA-256 of the exact archive sent. A local pack or HTTP 200 alone is insufficient. Requery the authenticated creator list to verify the same record's package URL and checksum. If download verification is needed, call the authenticated `POST /api/ograf-download-sign/v1` with `{ "package_path": "<updated package URL>" }`, download the signed package and compare its checksum without exposing signed URLs or credentials in the report.
+Apply the Qiniu target and CDN checks above to the replacement package. Success requires HTTP 2xx **and** `success: true` (not `ok: true`). Require `data.id` to match the original animation ID, `data.status` to equal `draft`, and `data.sha256` to match the SHA-256 of the exact archive sent. A local pack or HTTP 200 alone is insufficient. Requery the authenticated creator list to verify the same record's package URL and checksum. If download verification is needed, call the authenticated `POST /api/ograf-download-sign/v1` with `{ "package_path": "<updated package URL>" }`, download the signed package and compare its checksum without exposing signed URLs or credentials in the report.
 
 Handle 401 by resolving login; 404 by checking the ID and deployment; 409 by checking current ownership/state before any new attempt; package rejection by correcting and reviewing the package. Do not retry blindly or fall back to creating a duplicate or publishing publicly. If the request outcome is unknown, query the draft and compare its package checksum before deciding whether another upload is needed. If the endpoint is unavailable or not deployed, preserve the final archive and report synchronization as incomplete.
 

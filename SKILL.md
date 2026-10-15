@@ -15,7 +15,7 @@ Build an OGraf as a portable folder whose root contains `project.json` and `inde
 - For runtime behavior or lifecycle bugs, read [references/protocol.md](references/protocol.md).
 - For visual or form debugging, read [references/browser-debugging.md](references/browser-debugging.md).
 - When editing an existing private draft and synchronizing its code, read [references/ograf-app-upload.md](references/ograf-app-upload.md#sync-code-to-an-existing-draft). Use the existing animation ID rather than creating another workspace item.
-- Before any upload or publication, always read and apply [references/publishing-review.md](references/publishing-review.md).
+- Before any upload or publication, always read and apply [references/publishing-review.md](references/publishing-review.md). Read [references/ograf-app-upload.md](references/ograf-app-upload.md) for the Qiniu storage target and response verification, including existing draft synchronization.
 
 ## Component information
 
@@ -84,7 +84,7 @@ Review component names and descriptions in project.json, every .ograf.json and t
 
 Record PASS / FAIL / NEEDS_REVIEW, evidence, blockers, final metadata and the final archive SHA-256 in a local publication review report. FAIL, NEEDS_REVIEW or any untested required check means stop before upload/publish. Fix and recheck; do not upload a draft as a workaround. Any code, asset, parameter or metadata change invalidates the affected review; rebuild and check the final artifact before sending it.
 
-After PASS, read [references/ograf-app-upload.md](references/ograf-app-upload.md) and complete only the user's authorized upload/publication using supported tools and the saved CLI credentials. Always send the intended animation `status` explicitly: use `draft` when the user requests a private draft and `published` only when public publication is authorized. Follow the two-step upload/status procedure in that reference. Verify the returned `data.status`; for drafts confirm the workspace link and exclusion from the public catalogue, while public publication requires checking the public page. A draft is not a publicly published component. If tools or credentials are unavailable, retain the package and report the missing capability instead of inventing commands or results.
+After PASS, read [references/ograf-app-upload.md](references/ograf-app-upload.md) and complete only the user's authorized upload/publication using supported tools and the saved CLI credentials. Always send the intended animation `status` explicitly: use `draft` when the user requests a private draft and `published` only when public publication is authorized. Follow the two-step upload/status procedure in that reference. New packages belong in the Qiniu `haoog` bucket served by `https://og.haoai.pro`; verify the returned package URL and archive checksum before the status request. The website API performs the upload; CDN URLs are resource addresses, not upload/publication endpoints. If the API still returns the legacy storage domain, stop before publication and report that the server storage configuration needs updating. Verify the returned `data.status`; for drafts confirm the workspace link and exclusion from the public catalogue, while public publication requires checking the public page. A draft is not a publicly published component. If tools or credentials are unavailable, retain the package and report the missing capability instead of inventing commands or results.
 
 Do not upload, publish, or overwrite an unrelated package unless the user explicitly asks.
 

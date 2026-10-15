@@ -202,6 +202,8 @@ Python 校验器检查包大小、文件数量、解压总量、元数据和协�
 
 ## 8. 登录、上传与发布
 
+组件通过网站 API 上传到七牛 `haoog` 动画桶，资源域名为 `https://og.haoai.pro`。AI 会在继续发布前核对上传返回的资源地址、原始包 SHA-256 和解压入口；草稿同步执行相同检查。返回旧存储域名或校验失败时会报告实际结果并停止后续发布。七牛密钥由服务端管理，Skill 仍使用网站账号认证。具体步骤见 [上传与发布 API](references/ograf-app-upload.md#qiniu-storage-target-and-verification)。
+
 前面的创建、修改、校验和打包都在本地进行，不需要账号；从这里开始才需要登录 ograf.app。请先完成下面的审核，再登录并上传或发布。
 
 支持将动画保存为 `draft` 草稿状态：上传包后，发布接口显式传入 `animation.status: "draft"`。草稿不会出现在网站或桌面端公开列表；需要公开发布时，再按用户指令传入 `"published"`。上传到工作区与设置动画发布状态是两个步骤，完整请求示例见 [上传与发布 API](references/ograf-app-upload.md)。
